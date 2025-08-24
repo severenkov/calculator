@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classic">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About the Creator</title>
+  <style>
+    :root {
+      --bg: #0f1222; --panel: #171a2e; --accent: #6aa8ff; --accent-2: #9b7bff; --text: #e8ecf1; --muted: #9aa3b2; --shadow: 0 10px 30px rgba(0,0,0,.35); --radius: 18px;
+      --btn-num: #1b1f36; --btn-util: #1a213a; --btn-op-from: #213056; --btn-op-to: #1b294b; --btn-eq-from: #3b4b88; --btn-eq-to: #2b3c74; --danger:#ff6a6a;
+    }
+    [data-theme="mario"] { --bg:#131313; --panel:#2b3f98; --accent:#e52521; --accent-2:#fbd000; --text:#fff; --muted:#cfd3dc; --shadow:0 10px 30px rgba(0,0,0,.45); }
+    [data-theme="minions"] { --bg:#0f1114; --panel:#24344d; --accent:#ffd400; --accent-2:#3b5ca8; --text:#fffef5; --muted:#cfd6e3; --shadow:0 10px 30px rgba(0,0,0,.45); }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;display:grid;place-items:center;padding:24px;color:var(--text);
+      background: radial-gradient(1200px 600px at 20% -10%, color-mix(in srgb, var(--panel) 40%, transparent), transparent 60%),
+                  radial-gradient(1000px 500px at 120% 10%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 60%), var(--bg);}
+
+    .wrap{width:min(720px,100%);display:flex;flex-direction:column;gap:14px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted)}
+    .theme-select{display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb, var(--panel) 70%, #000 30%);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:8px 10px;box-shadow:var(--shadow)}
+    .theme-select select{appearance:none;background:transparent;border:0;color:var(--text);font-size:14px;padding:4px 6px;outline:none;cursor:pointer}
+
+    .card{background:linear-gradient(180deg, color-mix(in srgb, var(--panel) 86%, #000 14%), color-mix(in srgb, var(--panel) 70%, #000 30%));border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow);border-radius:var(--radius);padding:18px}
+    h1{margin:0 0 6px;font-size:clamp(24px,6vw,34px)}
+    p{margin:6px 0;color:var(--muted);line-height:1.55}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .k{color:var(--muted)}
+    a{color:var(--accent)}
+    .btns{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#1b1f36;color:var(--text);text-decoration:none}
+    .btn:hover{filter:brightness(1.08)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>🧮 <strong>Calculator</strong> • About</div>
+      <div class="theme-select">
+        <label for="theme" style="opacity:.8">Theme:</label>
+        <select id="theme" aria-label="Select theme">
+          <option value="classic">Classic</option>
+          <option value="mario">Mario</option>
+          <option value="minions">Minions</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h1>About the Creator</h1>
+      <p>This simple, mobile-friendly calculator was built as a vibe‑coding project to learn the basics of HTML, CSS, and JavaScript, then deployed with Vercel.</p>
+      <div class="grid">
+        <div class="card">
+          <h2 style="margin:0 0 8px;font-size:20px">Creator</h2>
+          <p><span class="k">Name:</span> <strong>Your Name</strong></p>
+          <p><span class="k">Location:</span> Your City</p>
+          <p><span class="k">Stack:</span> HTML + CSS + JavaScript (no backend)</p>
+        </div>
+        <div class="card">
+          <h2 style="margin:0 0 8px;font-size:20px">Links</h2>
+          <p><a href="/" class="btn">← Back to Calculator</a></p>
+          <div class="btns">
+            <a class="btn" href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
+            <a class="btn" href="mailto:you@example.com">Email</a>
+            <a class="btn" href="#">Website</a>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:10px">Feel free to reuse this page as a template. Replace placeholders with your details, and add any credits or acknowledgements here.</p>
+    </div>
+  </div>
+
+  <script>
+    // Theme sync with calculator page
+    const THEME_KEY = 'calc-theme';
+    const themeSelect = document.getElementById('theme');
+    function applyTheme(theme){
+      const t = ['classic','mario','minions'].includes(theme) ? theme : 'classic';
+      document.documentElement.setAttribute('data-theme', t);
+      themeSelect.value = t;
+      try { localStorage.setItem(THEME_KEY, t); } catch {}
+    }
+    applyTheme(localStorage.getItem(THEME_KEY) || 'classic');
+    themeSelect.addEventListener('change', e => applyTheme(e.target.value));
+    window.addEventListener('keydown', (e)=>{ if (e.key==='t'||e.key==='T'){ const order=['classic','mario','minions']; const curr=themeSelect.value; const next=order[(order.indexOf(curr)+1)%order.length]; applyTheme(next); }});
+  </script>
+</body>
+</html>
