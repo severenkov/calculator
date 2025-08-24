@@ -4,98 +4,131 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Web Calculator</title>
-  <style>
-    :root {
-      --bg: #0f1222;
-      --panel: #171a2e;
-      --accent: #6aa8ff;
-      --accent-2: #9b7bff;
-      --text: #e8ecf1;
-      --muted: #9aa3b2;
-      --danger: #ff6a6a;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius: 18px;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: radial-gradient(1200px 600px at 20% -10%, #1a1f3f 0%, transparent 60%),
-                  radial-gradient(1000px 500px at 120% 10%, #2a1743 0%, transparent 60%),
-                  var(--bg);
-      color: var(--text);
-      display: grid;
-      place-items: center;
-      padding: 24px;
-    }
-    .calc {
-      width: min(420px, 100%);
-      background: linear-gradient(180deg, #191c33 0%, #14172b 100%);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,.06);
-      overflow: hidden;
-    }
-    .display {
-      padding: 18px 18px 8px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
-      border-bottom: 1px solid rgba(255,255,255,.06);
-    }
-    .history {
-      min-height: 22px;
-      color: var(--muted);
-      text-align: right;
-      font-size: 0.95rem;
-      letter-spacing: .5px;
-      white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
-    }
-    .result {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-      font-size: clamp(28px, 6.2vw, 44px);
-      line-height: 1.2;
-      padding: 6px 4px 8px;
-      user-select: none;
-    }
+<style>
+  :root {
+    /* Mario palette */
+    --bg: #131313;           /* page background (dark) */
+    --panel: #2b3f98;        /* calculator panel (Mario blue) */
+    --accent: #e52521;       /* primary accent (Mario red) */
+    --accent-2: #fbd000;     /* secondary accent (Mario yellow) */
+    --text: #ffffff;         /* main text */
+    --muted: #cfd3dc;        /* subtle text */
+    --danger: #e52521;       /* AC button (red) */
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --radius: 18px;
+  }
 
-    .keys {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      padding: 14px;
-    }
-    button {
-      appearance: none;
-      border: 0;
-      border-radius: 14px;
-      padding: 16px 14px;
-      font-size: 1.05rem;
-      line-height: 1;
-      background: #1b1f36;
-      color: var(--text);
-      box-shadow: inset 0 -2px 0 rgba(255,255,255,.03), 0 6px 16px rgba(0,0,0,.25);
-      border: 1px solid rgba(255,255,255,.06);
-      cursor: pointer;
-      transition: transform .05s ease, filter .2s ease, background .2s ease, border-color .2s ease;
-    }
-    button:active { transform: translateY(1px) scale(.997); }
-    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .op { background: linear-gradient(180deg, #213056, #1b294b); border-color: rgba(106,168,255,.35); }
-    .op.primary { background: linear-gradient(180deg, #3b4b88, #2b3c74); }
-    .util { background: #1a213a; color: #c9d3e6; }
-    .danger { background: #3a1a22; color: #ffd1d1; border-color: rgba(255,106,106,.35); }
-    .wide { grid-column: span 2; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    /* dark with a soft radial glow in Mario blue/red */
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(43,63,152,.35) 0%, transparent 60%),
+      radial-gradient(1000px 500px at 120% 10%, rgba(229,37,33,.25) 0%, transparent 60%),
+      var(--bg);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
 
-    .footer { color: var(--muted); font-size: .9rem; text-align: center; padding: 8px 0 14px; }
+  .calc {
+    width: min(420px, 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 86%, #000 14%), color-mix(in srgb, var(--panel) 70%, #000 30%));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(255,255,255,.08);
+    overflow: hidden;
+  }
 
-    /* Better hit areas on mobile */
-    @media (max-width: 420px) {
-      button { padding: 18px 12px; font-size: 1.15rem; }
-      .keys { gap: 8px; }
-    }
-  </style>
+  .display {
+    padding: 18px 18px 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
+    border-bottom: 1px solid rgba(255,255,255,.10);
+  }
+  .history {
+    min-height: 22px;
+    color: var(--muted);
+    text-align: right;
+    font-size: 0.95rem;
+    letter-spacing: .5px;
+    white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .result {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(28px, 6.2vw, 44px);
+    line-height: 1.2;
+    padding: 6px 4px 8px;
+    user-select: none;
+  }
+
+  .keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 14px;
+  }
+
+  /* base button */
+  button {
+    appearance: none;
+    border: 0;
+    border-radius: 14px;
+    padding: 16px 14px;
+    font-size: 1.05rem;
+    line-height: 1;
+    background: #1a224d; /* dark navy for number keys */
+    color: var(--text);
+    box-shadow: inset 0 -2px 0 rgba(255,255,255,.06), 0 6px 16px rgba(0,0,0,.25);
+    border: 1px solid rgba(255,255,255,.10);
+    cursor: pointer;
+    transition: transform .05s ease, filter .2s ease, background .2s ease, border-color .2s ease;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: translateY(1px) scale(.997); }
+  button:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+  /* operators = Mario blue */
+  .op {
+    background: linear-gradient(180deg, #3b5dc9, #2f47a6);
+    border-color: rgba(59,93,201,.55);
+  }
+
+  /* equals = Mario yellow */
+  .op.primary, [data-action="equals"] {
+    background: linear-gradient(180deg, #fbd000, #d6b300);
+    color: #1a1500;
+    border-color: rgba(251,208,0,.65);
+    text-shadow: 0 1px 0 rgba(255,255,255,.35);
+  }
+
+  /* utilities = slightly lighter navy */
+  .util {
+    background: #222b63;
+    color: #e9edff;
+  }
+
+  /* AC = Mario red */
+  .danger, [data-action="all-clear"] {
+    background: linear-gradient(180deg, #e52521, #b61f1c);
+    border-color: rgba(229,37,33,.6);
+    color: #fff7f7;
+  }
+
+  .wide { grid-column: span 2; }
+  .footer { color: var(--muted); font-size: .9rem; text-align: center; padding: 8px 0 14px; }
+
+  /* Better hit areas on mobile */
+  @media (max-width: 420px) {
+    button { padding: 18px 12px; font-size: 1.15rem; }
+    .keys { gap: 8px; }
+  }
+</style>
+
 </head>
 <body>
   <main class="calc" role="application" aria-label="Calculator">
