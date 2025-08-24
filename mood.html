@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mood — Daily Check‑In</title>
+  <style>
+    :root{
+      --bg:#0f1222; --panel:#171a2e; --text:#e8ecf1; --muted:#9aa3b2;
+      --accent:#6aa8ff; --accent2:#9b7bff; --good:#36d399; --bad:#ff6a6a; --warn:#fbbf24;
+      --shadow: 0 10px 30px rgba(0,0,0,.35); --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background: radial-gradient(1000px 600px at 10% -10%, #1b2145 0%, transparent 60%),
+                  radial-gradient(1000px 500px at 120% 10%, #29174a 0%, transparent 60%), var(--bg);
+      color:var(--text); display:grid; place-items:center; padding:22px}
+
+    .app{width:min(720px,100%); display:flex; flex-direction:column; gap:12px}
+    .card{background:linear-gradient(180deg, #191c33, #14172b); border:1px solid rgba(255,255,255,.08);
+      border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+
+    .top{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 4px; color:var(--muted)}
+    .brand{display:flex; align-items:center; gap:8px}
+    .brand b{color:var(--text)}
+
+    .tabs{display:flex; gap:8px}
+    .tab{padding:8px 12px; border-radius:12px; cursor:pointer; color:var(--muted); border:1px solid transparent}
+    .tab[aria-selected="true"]{color:var(--text); border-color:rgba(255,255,255,.1); background:#1b1f36}
+
+    /* TODAY */
+    .today{padding:16px}
+    h1{margin:0 0 8px; font-size:clamp(22px,5vw,28px)}
+    .sub{margin:0 0 14px; color:var(--muted)}
+
+    .scale{display:flex; gap:10px; flex-wrap:wrap}
+    .rate{flex:1 1 90px; min-width:84px; text-align:center; padding:14px 10px; border-radius:14px; cursor:pointer;
+      background:#1b1f36; border:1px solid rgba(255,255,255,.08)}
+    .rate small{display:block; color:var(--muted)}
+    .rate[data-active="true"]{outline:2px solid var(--accent); outline-offset:2px}
+
+    .faces{font-size:24px; display:block; margin-bottom:6px}
+
+    .activities{margin-top:16px}
+    .chips{display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px}
+    .chip{padding:10px 12px; border-radius:12px; text-align:center; cursor:pointer; user-select:none;
+      background:#1b1f36; border:1px solid rgba(255,255,255,.08); color:var(--text)}
+    .chip[data-on="true"]{background:color-mix(in srgb, var(--accent) 25%, #1b1f36); border-color:color-mix(in srgb, var(--accent) 50%, #000)}
+
+    .notes{margin-top:12px}
+    textarea{width:100%; background:#0f1430; color:var(--text); border-radius:12px; border:1px solid rgba(255,255,255,.1);
+      padding:10px; min-height:70px}
+
+    .actions{display:flex; gap:10px; justify-content:flex-end; margin-top:14px}
+    .btn{padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.12); cursor:pointer; background:#1b1f36; color:var(--text)}
+    .btn.primary{background:linear-gradient(180deg, #3b4b88, #2b3c74)}
+    .btn:disabled{opacity:.6; cursor:not-allowed}
+
+    /* HISTORY */
+    .history{padding:14px}
+    .list{display:flex; flex-direction:column; gap:10px}
+    .row{display:flex; align-items:center; gap:10px; padding:10px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:#0f1430}
+    .date{width:110px; color:var(--muted)}
+    .mood{width:56px; text-align:center; font-weight:700}
+    .acts{display:flex; gap:6px; flex-wrap:wrap}
+    .pill{background:#1b1f36; border:1px solid rgba(255,255,255,.08); border-radius:999px; padding:4px 8px; font-size:12px}
+
+    .chart{margin:10px 0 4px; display:flex; align-items:flex-end; gap:6px; height:120px; padding:10px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:#0f1430}
+    .bar{flex:1; min-width:8px; background:linear-gradient(180deg, var(--accent2), var(--accent)); border-radius:6px 6px 0 0; position:relative}
+    .bar::after{content:attr(data-v); position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:12px; color:var(--muted)}
+
+    .empty{padding:12px; color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top">
+      <div class="brand">🧠 <b>Mood</b> — Daily Check‑In</div>
+      <nav class="tabs" role="tablist">
+        <button class="tab" id="t-today" role="tab" aria-selected="true">Today</button>
+        <button class="tab" id="t-history" role="tab" aria-selected="false">History</button>
+        <a class="tab" href="/about.html">About</a>
+      </nav>
+    </div>
+
+    <!-- TODAY CARD -->
+    <section class="card today" id="page-today" role="tabpanel" aria-labelledby="t-today">
+      <h1>How do you feel today?</h1>
+      <p class="sub">Evening check‑in • Rate 1–5 (1 = very low, 5 = great)</p>
+      <div class="scale" id="scale"></div>
+
+      <div class="activities">
+        <h2 style="margin:4px 0 8px; font-size:18px">What did you do today?</h2>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <div class="notes">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" placeholder="Anything notable about your day…"></textarea>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="btn-clear">Clear</button>
+        <button class="btn primary" id="btn-save" disabled>Save check‑in</button>
+      </div>
+    </section>
+
+    <!-- HISTORY CARD -->
+    <section class="card history" id="page-history" role="tabpanel" aria-labelledby="t-history" hidden>
+      <h1 style="margin:0 0 8px">Your history</h1>
+      <div class="chart" id="chart" aria-label="Last 14 days"></div>
+      <div id="history-list" class="list"></div>
+    </section>
+  </div>
+
+  <script>
+    // ------- Data & Utilities
+    const KEY = 'mood-entries-v1';
+    const ACTIVITIES = [
+      'Work','Exercise','Family','Friends','Meditation','Walk','Nature','Creative',
+      'Sleep 7h+','Healthy food','Alcohol','High screen time','News doomscroll','Therapy','Reading'
+    ];
+    const FACES = ['😞','😕','😐','🙂','😄'];
+
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    function todayISO(){ const d = new Date(); d.setHours(0,0,0,0); return d.toISOString().slice(0,10); }
+    function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } }
+    function saveAll(list){ localStorage.setItem(KEY, JSON.stringify(list)); }
+
+    function upsertEntry(entry){
+      const list = load();
+      const i = list.findIndex(e => e.date === entry.date);
+      if(i>=0) list[i] = entry; else list.push(entry);
+      list.sort((a,b)=> (a.date < b.date ? 1 : -1));
+      saveAll(list);
+    }
+
+    // ------- UI: Today page
+    const scaleEl = $('#scale');
+    const chipsEl = $('#chips');
+    const notesEl = $('#notes');
+    const saveBtn = $('#btn-save');
+    const clearBtn = $('#btn-clear');
+
+    let selectedMood = null;
+    let selectedActs = new Set();
+
+    function renderScale(){
+      scaleEl.innerHTML = '';
+      for(let i=1;i<=5;i++){
+        const b = document.createElement('button');
+        b.className = 'rate';
+        b.innerHTML = `<span class="faces">${FACES[i-1]}</span><div style="font-size:18px; font-weight:700">${i}</div><small>${labelFor(i)}</small>`;
+        b.setAttribute('data-value', i);
+        b.addEventListener('click', ()=>{ selectedMood = i; syncScale(); checkReady(); });
+        scaleEl.appendChild(b);
+      }
+      syncScale();
+    }
+    function labelFor(i){ return ['Very low','Low','Ok','Good','Great'][i-1]; }
+    function syncScale(){ $$('#scale .rate').forEach(el => el.dataset.active = (Number(el.dataset.value)===selectedMood)); }
+
+    function renderChips(){
+      chipsEl.innerHTML = '';
+      ACTIVITIES.forEach(name => {
+        const c = document.createElement('div');
+        c.className = 'chip'; c.textContent = name;
+        c.setAttribute('role','switch'); c.setAttribute('aria-checked','false');
+        c.addEventListener('click', ()=>{ if(selectedActs.has(name)) { selectedActs.delete(name); c.dataset.on = false; c.ariaChecked = 'false'; } else { selectedActs.add(name); c.dataset.on = true; c.ariaChecked = 'true'; } });
+        chipsEl.appendChild(c);
+      });
+    }
+
+    function checkReady(){ saveBtn.disabled = (selectedMood==null); }
+
+    function loadTodayIfAny(){
+      const list = load();
+      const entry = list.find(e => e.date === todayISO());
+      if(!entry) return;
+      selectedMood = entry.mood; syncScale();
+      selectedActs = new Set(entry.activities||[]);
+      // toggle chips
+      $$('#chips .chip').forEach(ch => ch.dataset.on = selectedActs.has(ch.textContent));
+      notesEl.value = entry.notes||'';
+      checkReady();
+    }
+
+    saveBtn.addEventListener('click', ()=>{
+      const entry = {
+        date: todayISO(),
+        mood: selectedMood,
+        activities: Array.from(selectedActs),
+        notes: notesEl.value.trim(),
+        ts: Date.now()
+      };
+      upsertEntry(entry);
+      alert('Saved! You can view it in History.');
+      renderHistory();
+      switchTab('history');
+    });
+
+    clearBtn.addEventListener('click', ()=>{
+      selectedMood = null; selectedActs.clear(); notesEl.value='';
+      syncScale(); $$('#chips .chip').forEach(ch=> ch.dataset.on=false); checkReady();
+    });
+
+    // ------- History page
+    const listEl = $('#history-list');
+    const chartEl = $('#chart');
+
+    function renderHistory(){
+      const data = load();
+      listEl.innerHTML = '';
+      if(data.length===0){ listEl.innerHTML = `<div class="empty">No entries yet. Do your first check‑in on the Today tab.</div>`; chartEl.innerHTML=''; return; }
+
+      // list
+      data.forEach(e => {
+        const row = document.createElement('div'); row.className='row';
+        row.innerHTML = `<div class="date">${e.date}</div>
+                         <div class="mood">${FACES[e.mood-1]} ${e.mood}/5</div>
+                         <div class="acts">${(e.activities||[]).map(a=>`<span class='pill'>${a}</span>`).join('')}</div>`;
+        listEl.appendChild(row);
+      });
+
+      // simple 14-day chart
+      chartEl.innerHTML='';
+      const last14 = buildLastNDays(14);
+      last14.forEach(d => {
+        const e = data.find(x=>x.date===d) || null;
+        const v = e? e.mood : 0;
+        const bar = document.createElement('div'); bar.className='bar';
+        bar.style.height = (v*18)+'%'; // 0..90%
+        bar.dataset.v = v || '';
+        bar.title = d + (v? ` — ${v}/5` : ' — no entry');
+        chartEl.appendChild(bar);
+      });
+    }
+
+    function buildLastNDays(n){
+      const out=[]; const now=new Date(); now.setHours(0,0,0,0);
+      for(let i=n-1;i>=0;i--){ const d=new Date(now); d.setDate(now.getDate()-i); out.push(d.toISOString().slice(0,10)); }
+      return out;
+    }
+
+    // ------- Tabs
+    const tabToday = document.getElementById('t-today');
+    const tabHistory = document.getElementById('t-history');
+    tabToday.addEventListener('click', ()=> switchTab('today'));
+    tabHistory.addEventListener('click', ()=> switchTab('history'));
+
+    function switchTab(which){
+      const isToday = which==='today';
+      document.getElementById('page-today').hidden = !isToday;
+      document.getElementById('page-history').hidden = isToday;
+      tabToday.setAttribute('aria-selected', isToday);
+      tabHistory.setAttribute('aria-selected', !isToday);
+    }
+
+    // ------- Init
+    renderScale();
+    renderChips();
+    loadTodayIfAny();
+    renderHistory();
+
+    // Optional: Auto-suggest evening check-in banner (if between 18:00-22:00)
+    (function(){
+      const h = new Date().getHours();
+      if(h>=18 && h<=22){ document.title = '🌙 Evening check‑in — Mood'; }
+    })();
+  </script>
+</body>
+</html>
