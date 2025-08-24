@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web Calculator</title>
+  <style>
+    :root {
+      --bg: #0f1222;
+      --panel: #171a2e;
+      --accent: #6aa8ff;
+      --accent-2: #9b7bff;
+      --text: #e8ecf1;
+      --muted: #9aa3b2;
+      --danger: #ff6a6a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 20% -10%, #1a1f3f 0%, transparent 60%),
+                  radial-gradient(1000px 500px at 120% 10%, #2a1743 0%, transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .calc {
+      width: min(420px, 100%);
+      background: linear-gradient(180deg, #191c33 0%, #14172b 100%);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.06);
+      overflow: hidden;
+    }
+    .display {
+      padding: 18px 18px 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .history {
+      min-height: 22px;
+      color: var(--muted);
+      text-align: right;
+      font-size: 0.95rem;
+      letter-spacing: .5px;
+      white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .result {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(28px, 6.2vw, 44px);
+      line-height: 1.2;
+      padding: 6px 4px 8px;
+      user-select: none;
+    }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 14px;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 16px 14px;
+      font-size: 1.05rem;
+      line-height: 1;
+      background: #1b1f36;
+      color: var(--text);
+      box-shadow: inset 0 -2px 0 rgba(255,255,255,.03), 0 6px 16px rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.06);
+      cursor: pointer;
+      transition: transform .05s ease, filter .2s ease, background .2s ease, border-color .2s ease;
+    }
+    button:active { transform: translateY(1px) scale(.997); }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .op { background: linear-gradient(180deg, #213056, #1b294b); border-color: rgba(106,168,255,.35); }
+    .op.primary { background: linear-gradient(180deg, #3b4b88, #2b3c74); }
+    .util { background: #1a213a; color: #c9d3e6; }
+    .danger { background: #3a1a22; color: #ffd1d1; border-color: rgba(255,106,106,.35); }
+    .wide { grid-column: span 2; }
+
+    .footer { color: var(--muted); font-size: .9rem; text-align: center; padding: 8px 0 14px; }
+
+    /* Better hit areas on mobile */
+    @media (max-width: 420px) {
+      button { padding: 18px 12px; font-size: 1.15rem; }
+      .keys { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="calc" role="application" aria-label="Calculator">
+    <section class="display">
+      <div class="history" id="history" aria-live="polite"></div>
+      <div class="result" id="result" aria-live="polite">0</div>
+    </section>
+
+    <section class="keys" id="keys">
+      <button class="util danger" data-action="all-clear" aria-label="All Clear">AC</button>
+      <button class="util" data-action="clear-entry" aria-label="Clear Entry">C</button>
+      <button class="util" data-action="sign" aria-label="Toggle Sign">+/−</button>
+      <button class="op" data-op="/" aria-label="Divide">÷</button>
+
+      <button data-digit="7">7</button>
+      <button data-digit="8">8</button>
+      <button data-digit="9">9</button>
+      <button class="op" data-op="*" aria-label="Multiply">×</button>
+
+      <button data-digit="4">4</button>
+      <button data-digit="5">5</button>
+      <button data-digit="6">6</button>
+      <button class="op" data-op="-" aria-label="Minus">−</button>
+
+      <button data-digit="1">1</button>
+      <button data-digit="2">2</button>
+      <button data-digit="3">3</button>
+      <button class="op" data-op="+" aria-label="Plus">+</button>
+
+      <button data-digit="0" class="wide">0</button>
+      <button data-action="dot" aria-label="Decimal">.</button>
+      <button class="op primary" data-action="equals" aria-label="Equals">=</button>
+
+      <button class="util" data-action="percent" aria-label="Percent">%</button>
+      <button class="util" data-action="backspace" aria-label="Backspace">⌫</button>
+    </section>
+    <div class="footer">Keyboard: 0–9 • + − × ÷ • Enter • Backspace • Esc</div>
+  </main>
+
+  <script>
+    // Calculator state machine (no eval)
+    const state = {
+      displayValue: '0',
+      firstOperand: null,
+      operator: null,
+      waitingForSecondOperand: false,
+      history: ''
+    };
+
+    const resultEl = document.getElementById('result');
+    const historyEl = document.getElementById('history');
+    const keysEl = document.getElementById('keys');
+
+    const OPERATIONS = {
+      '+': (a,b) => a + b,
+      '-': (a,b) => a - b,
+      '*': (a,b) => a * b,
+      '/': (a,b) => b === 0 ? NaN : a / b,
+    };
+
+    function format(n){
+      if (!isFinite(n)) return 'Error';
+      const s = n.toString();
+      if (s.length <= 12) return s;
+      return n.toExponential(6).replace('+','');
+    }
+
+    function updateDisplay(){
+      resultEl.textContent = state.displayValue;
+      historyEl.textContent = state.history;
+    }
+
+    function inputDigit(d){
+      if (state.waitingForSecondOperand) {
+        state.displayValue = d;
+        state.waitingForSecondOperand = false;
+      } else {
+        state.displayValue = state.displayValue === '0' ? d : state.displayValue + d;
+      }
+      updateDisplay();
+    }
+
+    function inputDot(){
+      if (state.waitingForSecondOperand) {
+        state.displayValue = '0.';
+        state.waitingForSecondOperand = false;
+      } else if (!state.displayValue.includes('.')) {
+        state.displayValue += '.';
+      }
+      updateDisplay();
+    }
+
+    function handleOperator(nextOp){
+      const inputValue = parseFloat(state.displayValue);
+
+      if (state.operator && state.waitingForSecondOperand) {
+        state.operator = nextOp; // operator change before typing second number
+        state.history = `${format(state.firstOperand)} ${symbolFor(nextOp)}`;
+        updateDisplay();
+        return;
+      }
+
+      if (state.firstOperand === null) {
+        state.firstOperand = inputValue;
+      } else if (state.operator) {
+        const fn = OPERATIONS[state.operator];
+        const result = fn(state.firstOperand, inputValue);
+        state.displayValue = format(result);
+        state.firstOperand = result;
+      }
+
+      state.operator = nextOp;
+      state.waitingForSecondOperand = true;
+      state.history = `${format(state.firstOperand)} ${symbolFor(nextOp)}`;
+      updateDisplay();
+    }
+
+    function symbolFor(op){
+      return ({'+': '+', '-':'−', '*':'×', '/':'÷'})[op] || op;
+    }
+
+    function clearAll(){
+      state.displayValue = '0';
+      state.firstOperand = null;
+      state.operator = null;
+      state.waitingForSecondOperand = false;
+      state.history = '';
+      updateDisplay();
+    }
+
+    function clearEntry(){
+      state.displayValue = '0';
+      updateDisplay();
+    }
+
+    function toggleSign(){
+      if (state.displayValue === '0') return;
+      if (state.displayValue.startsWith('-')) state.displayValue = state.displayValue.slice(1);
+      else state.displayValue = '-' + state.displayValue;
+      updateDisplay();
+    }
+
+    function backspace(){
+      if (state.waitingForSecondOperand) return;
+      state.displayValue = state.displayValue.length > 1 ? state.displayValue.slice(0,-1) : '0';
+      updateDisplay();
+    }
+
+    function percent(){
+      const value = parseFloat(state.displayValue);
+      if (isNaN(value)) return;
+      if (state.firstOperand != null && state.operator) {
+        // Standard calculator behavior: x op (x * (y/100))
+        const p = state.firstOperand * (value / 100);
+        state.displayValue = format(p);
+      } else {
+        state.displayValue = format(value / 100);
+      }
+      updateDisplay();
+    }
+
+    function equals(){
+      const inputValue = parseFloat(state.displayValue);
+      if (state.operator == null || state.firstOperand == null) return;
+      const fn = OPERATIONS[state.operator];
+      const result = fn(state.firstOperand, inputValue);
+      state.history = `${format(state.firstOperand)} ${symbolFor(state.operator)} ${format(inputValue)} =`;
+      state.displayValue = format(result);
+      state.firstOperand = null;
+      state.operator = null;
+      state.waitingForSecondOperand = false;
+      updateDisplay();
+    }
+
+    keysEl.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.dataset.digit) return inputDigit(btn.dataset.digit);
+      if (btn.dataset.op) return handleOperator(btn.dataset.op);
+
+      const action = btn.dataset.action;
+      if (!action) return;
+      ({
+        'dot': inputDot,
+        'all-clear': clearAll,
+        'clear-entry': clearEntry,
+        'sign': toggleSign,
+        'percent': percent,
+        'backspace': backspace,
+        'equals': equals,
+      })[action]?.();
+    });
+
+    // Keyboard support
+    window.addEventListener('keydown', (e)=>{
+      const k = e.key;
+      if (k >= '0' && k <= '9') return inputDigit(k);
+      if (k === '.') return inputDot();
+      if (k === '+' || k === '-' || k === '*' || k === '/') return handleOperator(k);
+      if (k === 'Enter' || k === '=') return equals();
+      if (k === 'Escape') return clearAll();
+      if (k === 'Backspace') return backspace();
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
